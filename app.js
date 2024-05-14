@@ -80,7 +80,7 @@ app.post('/upload/products', upload.single('image'), async (req, res) => {
         await sharp(req.file.path).toFormat('webp').toFile(outputPath);
         await fs.unlink(req.file.path); // Eliminar el archivo original con fs.promises
 
-        res.send({ imageUrl: `http://localhost:${PORT}/${outputPath}` });
+        res.send({ imageUrl: `https://media-static.creceidea.pe/${outputPath}` });
     } catch (error) {
         console.error(error);
         res.status(500).send('Error interno del servidor.');
