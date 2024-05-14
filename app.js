@@ -1,30 +1,32 @@
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
-const fs = require('fs').promises; // Importar fs con promesas
+const fs = require('fs').promises;
 const slugify = require('slugify');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DIRECTORY_BASE = '../media-static.creceidea.pe';
+const DIRECTORY_BASE = 'media-static.creceidea.pe';
 
 const ensureDirectoriesExist = async (DIR_DOMAIN) => {
     try {
-        await fs.access(`${DIRECTORY_BASE}/${DIR_DOMAIN}`);
+        await fs.access(`../${DIRECTORY_BASE}/${DIR_DOMAIN}`);
     } catch (err) {
         if (err.code === 'ENOENT') {
-            await fs.mkdir(`${DIRECTORY_BASE}/${DIR_DOMAIN}`, { recursive: true });
+            await fs.mkdir(`../${DIRECTORY_BASE}/${DIR_DOMAIN}`, { recursive: true });
         } else {
             console.error('Error al acceder al directorio:', err);
-            throw err; // Lanzar el error para que sea manejado en la ruta /upload
+            throw err;
         }
     }
 };
 
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB in bytes
+
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, DIRECTORY_BASE);
+        cb(null, `../${DIRECTORY_BASE}`);
     },
     filename: function (req, file, cb) {
         const originalName = file.originalname;
@@ -33,57 +35,88 @@ const storage = multer.diskStorage({
         cb(null, fileName);
     }
 });
-const upload = multer({ storage: storage });
 
-app.post('/upload/banner', upload.single('image'), async (req, res) => {
-    const DIR_DOMAIN = 'fiberstar/images/banner';
+const upload = multer({
+    storage: storage
+});
+
+app.post('/image/banner', upload.single('image'), async (req, res) => {
+    const domain = req.headers['domain'];
+
+    if (!domain) {
+        return res.status(400).json({ error: 'Domain header is required' });
+    }
+
+
+    const DIR_DOMAIN = domain + '/images/banner';
     try {
-        await ensureDirectoriesExist(DIR_DOMAIN); // Esperar a que se aseguren los directorios existan
+        await ensureDirectoriesExist(DIR_DOMAIN);
 
         if (!req.file) {
-            return res.status(400).send('No se ha subido ninguna imagen.');
+            return res.status(400).json({ error: 'No se ha subido ninguna imagen.' });
         }
+
+
+        if (req.file.size > MAX_IMAGE_SIZE_BYTES) {
+            await fs.unlink(req.file.path);
+            return res.status(400).json({ error: 'La imagen excede el tamaño máximo permitido (2MB).' });
+        }
+
 
         const allowedFormats = ['image/jpeg', 'image/png'];
         if (!allowedFormats.includes(req.file.mimetype)) {
-            await fs.unlink(req.file.path); // Usar fs.promises para eliminar el archivo
-            return res.status(400).send('Formato de imagen no permitido.');
+            await fs.unlink(req.file.path);
+            return res.status(400).json({ error: 'Formato de imagen no permitido.' });
         }
-
-        const outputPath = `${DIRECTORY_BASE}/${DIR_DOMAIN}/${slugify(req.file.originalname.split('.')[0], { lower: true, remove: /[*+~.()'"!:@]/g }).replace(/\s+/g, '-')}.webp`;
+        const NAME_FILE = slugify(req.file.originalname.split('.')[0], { lower: true, remove: /[*+~.()'"!:@]/g }).replace(/\s+/g, '-');
+        const outputPath = `../${DIRECTORY_BASE}/${DIR_DOMAIN}/${NAME_FILE}.webp`;
         await sharp(req.file.path).toFormat('webp').toFile(outputPath);
-        await fs.unlink(req.file.path); // Eliminar el archivo original con fs.promises
+        await fs.unlink(req.file.path);
 
-        res.send({ imageUrl: `http://localhost:${PORT}/${outputPath}` });
+        res.json({ imageUrl: `https://${DIRECTORY_BASE}/${DIR_DOMAIN}/${NAME_FILE}.webp` });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Error interno del servidor.');
+        res.status(500).json({ error: 'Error interno del servidor.' });
     }
 });
 
-app.post('/upload/products', upload.single('image'), async (req, res) => {
-    const DIR_DOMAIN = 'fiberstar/images/products';
+app.post('/image/product', upload.single('image'), async (req, res) => {
+    const domain = req.headers['domain'];
+
+    if (!domain) {
+        return res.status(400).json({ error: 'Domain header is required' });
+    }
+
+    const DIR_DOMAIN = domain + '/images/products';
+
+
     try {
-        await ensureDirectoriesExist(DIR_DOMAIN); // Esperar a que se aseguren los directorios existan
+        await ensureDirectoriesExist(DIR_DOMAIN);
+
+        if (req.file.size > MAX_IMAGE_SIZE_BYTES) {
+            await fs.unlink(req.file.path);
+            return res.status(400).json({ error: 'La imagen excede el tamaño máximo permitido (2MB).' });
+        }
+
 
         if (!req.file) {
-            return res.status(400).send('No se ha subido ninguna imagen.');
+            return res.status(400).json({ error: 'No se ha subido ninguna imagen.' });
         }
 
         const allowedFormats = ['image/jpeg', 'image/png'];
         if (!allowedFormats.includes(req.file.mimetype)) {
-            await fs.unlink(req.file.path); // Usar fs.promises para eliminar el archivo
-            return res.status(400).send('Formato de imagen no permitido.');
+            await fs.unlink(req.file.path);
+            return res.status(400).json({ error: 'Formato de imagen no permitido.' });
         }
-
-        const outputPath = `${DIRECTORY_BASE}/${DIR_DOMAIN}/${slugify(req.file.originalname.split('.')[0], { lower: true, remove: /[*+~.()'"!:@]/g }).replace(/\s+/g, '-')}.webp`;
+        const NAME_FILE = slugify(req.file.originalname.split('.')[0], { lower: true, remove: /[*+~.()'"!:@]/g }).replace(/\s+/g, '-');
+        const outputPath = `../${DIRECTORY_BASE}/${DIR_DOMAIN}/${NAME_FILE}.webp`;
         await sharp(req.file.path).toFormat('webp').toFile(outputPath);
-        await fs.unlink(req.file.path); // Eliminar el archivo original con fs.promises
+        await fs.unlink(req.file.path);
 
-        res.send({ imageUrl: `${outputPath}` });
+        res.json({ imageUrl: `https://${DIRECTORY_BASE}/${DIR_DOMAIN}/${NAME_FILE}.webp` });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Error interno del servidor.');
+        res.status(500).json({ error: 'Error interno del servidor.' });
     }
 });
 
