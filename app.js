@@ -7,7 +7,7 @@ const slugify = require('slugify');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const BRIAMZSPORT_DIR = '../media.creceidea.pe';
+const BRIAMZSPORT_DIR = '../media-static.creceidea.pe';
 
 const ensureDirectoriesExist = async (DIR_DOMAIN) => {
     try {
