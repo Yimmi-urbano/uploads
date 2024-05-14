@@ -24,7 +24,7 @@ const ensureDirectoriesExist = async (DIR_DOMAIN) => {
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, BRIAMZSPORT_DIR);
+        cb(null, DIRECTORY_BASE);
     },
     filename: function (req, file, cb) {
         const originalName = file.originalname;
