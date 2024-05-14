@@ -3,10 +3,11 @@ const multer = require('multer');
 const sharp = require('sharp');
 const fs = require('fs').promises;
 const slugify = require('slugify');
+const cors = require('cors'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+app.use(cors());
 const DIRECTORY_BASE = 'media-static.creceidea.pe';
 
 const ensureDirectoriesExist = async (DIR_DOMAIN) => {
