@@ -109,7 +109,7 @@ app.post('/image/product', upload.single('image'), async (req, res) => {
             return res.status(400).json({ error: 'No se ha subido ninguna imagen.' });
         }
 
-        const allowedFormats = ['image/jpeg', 'image/png'];
+        const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowedFormats.includes(req.file.mimetype)) {
             await fs.unlink(req.file.path);
             return res.status(400).json({ error: 'Formato de imagen no permitido.' });
