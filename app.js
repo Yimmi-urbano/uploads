@@ -69,7 +69,7 @@ app.post('/image/banner', upload.single('image'), async (req, res) => {
         }
 
 
-        const allowedFormats = ['image/jpeg', 'image/png'];
+        const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowedFormats.includes(req.file.mimetype)) {
             await fs.unlink(req.file.path);
             return res.status(400).json({ error: 'Formato de imagen no permitido.' });
